@@ -11,6 +11,8 @@ db.places.insertOne({
 });
 
 // ------------- Adding a GeoSpatial Index to Track the Distance ---------------
+// places collection
+
 // create geospatial index with the field location
 db.places.createIndex({
   location: '2dsphere'
@@ -31,6 +33,8 @@ db.places.find({
 });
 
 // ------------- Adding Additional Locations ------------------
+// places collection
+
 // add these 3 documents include 
   // name fields 'Conservatory of Flowers', 'Golden Gate Tennis Park', 'Nopa'
   // location field containing geoJSON object
@@ -60,6 +64,8 @@ db.places.insertMany([{
 }]);
 
 // ------------- Find Places Inside a Certain Area ------------------
+// places collection
+
 // create variables named p1, p2, p3, p4 with the given coordinates
 // -122.4547, 37.77473
 // -122.45303, 37.76641
@@ -79,6 +85,90 @@ db.places.find({
         type: 'Polygon',
         coordinates: [[p1, p2, p3, p4, p1]]
       }
+    }
+  }
+});
+
+// ------------- Find Out If a User Is Inside a Specific Area ------------------
+// areas collection
+
+// insert document with field name 'Golden Gate Park', area field with value of a geoJSON object representing the area golden gate park uses
+db.areas.insertOne({
+  name: 'Golden Gate Park',
+  area: {
+    type: 'Polygon',
+    coordinates: [[p1, p2, p3, p4, p1]]
+  }
+});
+
+// create geospatial index with the field area
+db.areas.createIndex({
+  area: '2dsphere'
+});
+
+// find locations that intersect the given coordinates -122.49089, 37.76992 on the field area it should a point
+// observe results
+db.areas.find({
+  area: {
+    $geoIntersects: {
+      $geometry: {
+        type: 'Point',
+        coordinates: [-122.49089, 37.76992]
+      }
+    }
+  }
+});
+
+// find locations that intersect the given coordinates -122.48446, 37.77776 on the field area it should a point
+// observe results
+db.areas.find({
+  area: {
+    $geoIntersects: {
+      $geometry: {
+        type: 'Point',
+        coordinates: [-122.48446, 37.77776]
+      }
+    }
+  }
+});
+
+// ------------- Find Places Within a Certain Radius ------------------
+// places collection
+
+// find a location that is within the center coordinates -122.46203, 37.77286 and radius of 1 miles
+// it should return all but Nopa location
+db.places.find({
+  location: {
+    $geoWithin: {
+      $centerSphere: [
+        [-122.46203, 37.77286],
+        1 / 3963.2
+      ]
+    }
+  }
+});
+
+// update Nopa location with these coordinates so it's included in the query
+// -122.46636, 37.77014
+db.places.updateOne({
+  _id: ObjectId('5efbdf92c389cacb100e5b85')
+}, {
+  $set: {
+    location: {
+      type: 'Point',
+      coordinates: [-122.46636, 37.77014]
+    }
+  }
+});
+
+// run the find query again and see if the change includes Nopa Location
+db.places.find({
+  location: {
+    $geoWithin: {
+      $centerSphere: [
+        [-122.46203, 37.77286],
+        1 / 3963.2
+      ]
     }
   }
 });
